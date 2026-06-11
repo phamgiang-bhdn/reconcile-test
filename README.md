@@ -2,6 +2,8 @@
 
 Đối soát đơn hàng của shop (`orders.csv`) với file thanh toán sàn TMĐT (`income.csv`): phân loại từng đơn, tính KPI và phát hiện chênh lệch. Backend **FastAPI + PostgreSQL**, frontend **Next.js 15**.
 
+![Dashboard đối soát](docs/dashboard.png)
+
 ## Tính năng
 
 - Đối soát mỗi đơn thành 4 trạng thái: `matched` / `refunded` / `orphan` / `unsettled`.

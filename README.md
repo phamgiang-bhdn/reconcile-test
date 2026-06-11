@@ -73,16 +73,29 @@ docker compose run --rm backend pytest -q               # 14 passed
 - **Tách lớp**: logic đối soát thuần (không phụ thuộc DB/web) → unit-test trực tiếp, không cần dựng database.
 - Phân loại dựa trên **dữ liệu thanh toán**; trường `status` của đơn dùng để hiển thị.
 
-## Làm việc với AI
+## Làm việc với AI (có kiểm soát)
 
-Tôi dùng AI để viết code nhưng **review và kiểm chứng từng con số tiền trước khi tin**. Một vài chỗ AI dễ làm sai mà tôi phát hiện được:
+Toàn bộ dự án phát triển bằng AI nhưng theo một **bộ đặc tả AI tự dựng** (chỉ thị + chuẩn code + reviewer đối kháng) thay vì để AI sinh tự do. Mỗi tính năng đi qua: đặc tả → test trước → AI review đối kháng → kiểm chứng số liệu.
 
-1. **Đơn mồ côi và tổng tiền** — bản nháp đầu lọc `total_net` chỉ trên các đơn khớp, làm thiếu `69.811 ₫` (tiền của đơn mồ côi đã thực về ví). Sửa: tổng tính trên toàn bộ thanh toán đã khử trùng, gồm cả đơn mồ côi.
-2. **Mẫu số tỉ lệ đối soát** — suýt lấy `(khớp + hoàn) / tổng số dòng` = 23/27. Đúng phải là `/ số đơn` = 23/26 (đơn mồ côi không phải đơn trong sổ). Đã thêm test khóa mẫu số = 26.
-3. **Dòng thanh toán trùng** — đơn `ORD-2026-0003` xuất hiện hai lần giống hệt; nếu cộng thẳng sẽ dư `73.440 ₫`. Đã khử trùng 2 lớp + test riêng.
-4. **Định nghĩa trạng thái** — gắn `matched/refunded` cứng với đơn `completed` trong khi thực tế phân loại theo dữ liệu thanh toán. Đã làm rõ và ghi nhận trường hợp ngoại lệ.
+**→ Quy trình đầy đủ + bằng chứng review: [AI-WORKFLOW.md](AI-WORKFLOW.md)**
 
-Mỗi con số được đối chiếu độc lập với file CSV gốc và kiểm lại bằng `/kpi` khi chạy thật.
+Các file **đặc tả AI** (chỉ thị/cấu hình cho AI — mở xem trực tiếp):
+
+| File | Vai trò |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Chỉ thị chính cho AI: stack, quy ước, luật tiền tệ, quy trình |
+| [`.claude/skills/`](.claude/skills/) | Chuẩn code từng tầng + quy trình AI phải tuân |
+| [`.claude/agents/`](.claude/agents/) | 3 reviewer đối kháng: edge-case / bug / correctness |
+| [`_bmad-output/`](_bmad-output/) | Đặc tả từng tính năng + báo cáo review + `sprint-status.yaml` |
+
+Vài lỗi AI dễ mắc mà quy trình review **đối kháng bắt được** (đề bài mục 7):
+
+1. **Đơn mồ côi và tổng tiền** — bản nháp lọc `total_net` chỉ trên đơn khớp, thiếu `69.811 ₫` (tiền đơn mồ côi đã thực về ví). → tổng tính trên toàn bộ thanh toán, gồm cả đơn mồ côi.
+2. **Mẫu số tỉ lệ đối soát** — suýt lấy `/ tổng số dòng` = 23/27; đúng là `/ số đơn` = 23/26. → thêm test khóa mẫu số = 26.
+3. **Dòng thanh toán trùng** (`ORD-2026-0003` ×2) — cộng thẳng dư `73.440 ₫`. → khử trùng 2 lớp + test riêng.
+4. **Khóa chống trùng thiếu `platform`** (khi mở rộng đa sàn) — hai sàn cùng (mã đơn, ngày, tiền) bị khử trùng nhầm, mất một dòng tiền. → đưa `platform` vào khóa tự nhiên.
+
+Mỗi con số được đối chiếu độc lập với CSV gốc và kiểm lại qua `/kpi` khi chạy thật.
 
 > **Self-check:** `Σ net_received = 1.615.756 ₫` — khớp.
 

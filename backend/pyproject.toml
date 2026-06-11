@@ -1,0 +1,30 @@
+[project]
+name = "recon-backend"
+version = "0.1.0"
+description = "E-commerce seller platform backend (FastAPI + Postgres)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.32,<0.33",
+    "psycopg[binary,pool]>=3.2,<3.3",
+    "pydantic-settings>=2.6,<3",
+    "openpyxl>=3.1,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "ruff>=0.8,<0.9",
+]
+# Migration: Goose (binary cài trong Dockerfile, không phải gói Python).
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

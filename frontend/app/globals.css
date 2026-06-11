@@ -1,0 +1,85 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --border: #e6e8eb;
+  --text: #1a1d21;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --neg: #dc2626;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 36px 24px 64px; }
+
+/* Header */
+.hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+h1 { font-size: 24px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0; font-size: 14px; max-width: 620px; line-height: 1.5; }
+.btn-export {
+  flex-shrink: 0; text-decoration: none; font-size: 13px; font-weight: 600;
+  color: #fff; background: var(--accent); padding: 10px 16px; border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08); transition: filter .15s;
+}
+.btn-export:hover { filter: brightness(1.08); }
+
+.banner { padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 20px; }
+.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* KPI cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 30px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; overflow: hidden; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: transparent; }
+.card--net::before { background: #16a34a; }
+.card--refund::before { background: #d97706; }
+.card-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.card-value { font-size: 22px; font-weight: 700; margin-top: 8px; letter-spacing: -0.01em; }
+.card-value.neg { color: var(--neg); }
+.card-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.skeleton { display: inline-block; width: 90px; height: 18px; border-radius: 6px; background: linear-gradient(90deg,#eee,#f5f5f5,#eee); }
+
+/* Filter chips */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--border); background: #fff; color: var(--text);
+  padding: 7px 12px 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+  transition: all .15s;
+}
+.chip:hover { border-color: #cfd2d6; }
+.chip--on { background: var(--text); color: #fff; border-color: var(--text); }
+.chip-count {
+  font-size: 12px; font-weight: 600; min-width: 20px; text-align: center;
+  background: rgba(0,0,0,.07); border-radius: 999px; padding: 1px 7px;
+}
+.chip--on .chip-count { background: rgba(255,255,255,.22); }
+
+/* Table */
+.table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 14px; font-size: 13px; text-align: left; border-bottom: 1px solid #f0f1f3; }
+th { background: #fafbfc; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+tbody tr:hover { background: #fafafe; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.neg { color: var(--neg); }
+td.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+td.muted { color: var(--muted); }
+.state { text-align: center; color: var(--muted); padding: 48px; }
+
+/* Badge (driven by UIMap variant) */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.badge--success { background: #dcfce7; color: #15803d; }
+.badge--warning { background: #fef3c7; color: #b45309; }
+.badge--danger  { background: #fee2e2; color: #b91c1c; }
+.badge--neutral { background: #eef0f2; color: #4b5563; }
+.badge--info    { background: #dbeafe; color: #1d4ed8; }
+
+@media (max-width: 640px) {
+  .hd { flex-direction: column; }
+}

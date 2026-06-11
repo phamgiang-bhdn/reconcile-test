@@ -1,0 +1,30 @@
+# last_updated: "2026-06-11" # 1-2 + 1-3 CODE REVIEW DONE → done. Panel 3 lớp bắt 3 BLOCK thật → đã fix: (1-2) rate xuất % không phải 0.8846; (1-3) UNIQUE +platform chống dedupe nuốt tiền đa sàn + seed nhận platform qua env. 14/14 test, e2e /kpi vẫn 1.615.756, export xlsx hợp lệ. Epic-1 hoàn tất (3/3 story done).
+# last_updated: "2026-06-11" # 1-1 CODE REVIEW DONE → done. 3 lớp đối kháng, 7/7 AC PASS, 0 BLOCK, 5 NOTE deferred. Oracle verify 3 nguồn.
+# last_updated: "2026-06-11" # 1-1 dev complete (TDD, 8/8 pytest pass) → review.
+# generated: "2026-06-11"
+# last_updated: "2026-06-11" # tech: migration chốt dùng GOOSE (như ig) — up+down chung 1 file SQL, 1 bảng 1 file (00001_create_orders, 00002_create_income_settlements), binary trong Dockerfile, track qua goose_db_version. Verified goose up/down/status roundtrip + /kpi=1.615.756. (Đã thử raw-runner→Alembic→yoyo, cuối cùng Goose). README/dev-workflow/skill data-postgres cập nhật.
+project: ecommerce-seller-platform
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS
+# ==================
+# Epic Status:  backlog | in-progress | done
+#   - backlog → in-progress: tự động khi story đầu tiên được create-story
+#   - in-progress → done: khi mọi story trong epic done
+# Story Status: backlog | ready-for-dev | in-progress | review | done   (+ split, deferred)
+#   - backlog: chỉ tồn tại trong epic file
+#   - ready-for-dev: đã tạo story file (create-story)
+#   - in-progress: đang implement (dev-story)
+#   - review: dev xong, chờ code-review panel
+#   - done: code-review pass (hết BLOCK + oracle khớp)
+# Retrospective: optional | done
+
+development_status:
+  # Epic 1: Reconciliation (đối soát thanh toán sàn)
+  epic-1: done
+  1-1-reconciliation-dashboard: done
+  1-2-export-excel: done
+  1-3-multi-platform: done
+  1-4-ui-ux-polish: done
+  epic-1-retrospective: optional

@@ -1,0 +1,16 @@
+num,category,method_name,description,output_pattern
+1,core,First Principles Analysis,Bóc giả định khỏi story rồi dựng lại từ sự thật nền tảng - phát hiện yêu cầu thừa/thiếu và định nghĩa nghiệp vụ mơ hồ,assumptions → truths → spec rõ hơn
+2,risk,Pre-mortem Analysis,Giả định story đã release và SAI số tiền - lần ngược nguyên nhân để vá trước,failure → causes → AC bổ sung
+3,risk,Challenge from Critical Perspective,Đóng vai phản biện cực đoan để stress-test từng AC và định nghĩa status,assumptions → challenges → strengthening
+4,risk,Identify Potential Risks,Brainstorm mọi thứ có thể sai theo nhóm (data/dấu/dedupe/biên/contract) - nền cho test plan,categories → risks → mitigations
+5,risk,Failure Mode Analysis,Soi từng cột dữ liệu/đầu vào có thể hỏng thế nào (null/âm/trùng/sai bất biến),inputs → failure modes → guards
+6,competitive,Red Team vs Blue Team,Tấn công-phòng thủ: red cố làm lệch oracle bằng dữ liệu hiểm; blue vá,attack → defense → hardening
+7,domain,Edge Case Enumeration,Liệt kê có hệ thống tổ hợp order×settlement (có/không × refund × cancelled × trùng × orphan) và bucket kỳ vọng,combinations → expected status → gaps
+8,domain,Oracle Cross-Check,Tính lại tay con số tổng từ dữ liệu thật và đối chiếu bất biến chéo - chống oracle sai từ đầu,recompute → cross-invariant → confirm/fix
+9,advanced,Self-Consistency Validation,Tính KPI bằng 2 cách độc lập (per-row vs aggregate) rồi so khớp,approaches → compare → consensus
+10,advanced,Tree of Thoughts,Khám phá nhiều cách hiểu một AC mơ hồ rồi chọn cách đúng nhất,paths → evaluation → selection
+11,technical,Architecture Decision Records,Nêu các lựa chọn thiết kế (vd dedupe ở DB vs domain) + trade-off + quyết định,options → trade-offs → decision
+12,collaboration,Stakeholder Round Table,Kế toán + dev + QA phản biện story từ góc riêng - cân yêu cầu xung đột,perspectives → synthesis → alignment
+13,creative,What If Scenarios,"Nếu sàn gửi 2 settlement khác nhau 1 đơn? Nếu net≠gross+fee+refund?" - lộ lỗ hổng spec,scenarios → implications → AC
+14,research,Comparative Analysis Matrix,Chấm các phương án (vd mẫu số rate) theo tiêu chí - quyết định có điểm số,options → criteria → scores
+15,meta,Meta-Prompting Analysis,Lùi lại soi chính cấu trúc story: AC có kiểm chứng được? oracle có test? thiếu mục nào?,current → analysis → optimization

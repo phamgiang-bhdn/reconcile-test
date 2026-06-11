@@ -1,67 +1,101 @@
 # Mini Reconciliation Dashboard
 
-Đối soát đơn hàng shop (`orders.csv`) với file thanh toán sàn (`income.csv`) → KPI + bảng phân loại 4 trạng thái. Backend **FastAPI + PostgreSQL**, frontend **Next.js 15**.
+Đối soát đơn hàng của shop (`orders.csv`) với file thanh toán sàn TMĐT (`income.csv`): phân loại từng đơn, tính KPI và phát hiện chênh lệch. Backend **FastAPI + PostgreSQL**, frontend **Next.js 15**.
 
-> Self-check: `Σ net_received = 1.615.756 ₫` — đã verify **3 nguồn độc lập** (pytest, reimplement Node, PowerShell) + chạy thật `docker compose`.
+## Tính năng
 
-## Cách chạy
+- Đối soát mỗi đơn thành 4 trạng thái: `matched` / `refunded` / `orphan` / `unsettled`.
+- API KPI: tổng doanh thu, tiền thực nhận, phí, hoàn tiền, tỉ lệ đối soát.
+- Dashboard: thẻ KPI + bảng lọc theo trạng thái + xuất Excel.
+- Xử lý dữ liệu bẩn: dòng thanh toán trùng, đơn mồ côi, hoàn tiền âm.
 
-### Backend + DB (Docker)
+## Stack & yêu cầu
+
+| | |
+|---|---|
+| Backend | FastAPI (Python 3.12), psycopg3 |
+| Database | PostgreSQL 16 |
+| Frontend | Next.js 15, TypeScript |
+| Migration | Goose (up/down) |
+| Hạ tầng | Docker Compose |
+
+**Cần có:** Docker Desktop, Node.js 20. *(Không cần cài Python/Postgres — chạy trong container.)*
+
+## Chạy
+
+**1. Backend + Database**
 ```bash
-docker compose up -d db                                       # PostgreSQL 16
-docker compose run --rm backend goose up                      # migrate (Goose: up/down chung 1 file SQL)
-docker compose run --rm backend python -m scripts.seed        # nạp 2 CSV (idempotent)
-docker compose up -d backend                                  # API :8000
-# rollback 1 bước: docker compose run --rm backend goose down   ·   trạng thái: goose status
-# kiểm: curl http://localhost:8000/kpi
+docker compose up -d db                                 # PostgreSQL
+docker compose run --rm backend goose up                # tạo schema
+docker compose run --rm backend python -m scripts.seed  # nạp orders.csv + income.csv
+docker compose up -d backend                            # API tại http://localhost:8000
 ```
 
-### Frontend
+**2. Frontend**
 ```bash
 cd frontend
-cp .env.example .env.local          # NEXT_PUBLIC_API_URL=http://localhost:8000
-npm install && npm run dev          # http://localhost:3000
+cp .env.example .env.local
+npm install && npm run dev                              # http://localhost:3000
 ```
 
-### Test
+**3. Test**
 ```bash
-docker compose run --rm backend pytest -q   # 8 passed (gồm test oracle)
+docker compose run --rm backend pytest -q               # 14 passed
 ```
+
+## Mô hình đối soát
+
+`net_received = gross_revenue + refund_amount + fee_total` (hoàn tiền & phí là số âm).
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `matched` | Đơn có thanh toán, không hoàn tiền — thu đủ |
+| `refunded` | Đơn có thanh toán kèm hoàn tiền (`refund_amount < 0`) |
+| `orphan` | Có dòng thanh toán nhưng không tìm thấy đơn trong sổ |
+| `unsettled` | Đơn tồn tại nhưng sàn chưa thanh toán (gồm đơn đã huỷ) |
 
 ## API
+
 | Endpoint | Mô tả |
 |---|---|
-| `GET /reconciliation[?status=]` | mỗi dòng + `reconcile_status` ∈ {matched, refunded, orphan, unsettled}; lọc theo status |
+| `GET /reconciliation[?status=]` | Danh sách đơn kèm `reconcile_status`, lọc theo trạng thái |
 | `GET /kpi` | `total_gross, total_net, total_fees, reconciliation_rate, refund_count, refund_total` |
-| `GET /reconciliation/export[?status=]` | xuất `.xlsx` (sheet KPI + ChiTiet), tiền là ô số (story 1-2) |
-| `GET /health` | readiness |
+| `GET /reconciliation/export[?status=]` | Xuất Excel (sheet KPI + chi tiết) |
+| `GET /health` | Health check |
 
-> Đa sàn (story 1-3): nạp file sàn khác bằng `SEED_PLATFORM=lazada SEED_INCOME_FILE=lazada.csv` — loader ánh xạ cột qua `PLATFORM_COLUMNS`, không sửa logic đối soát.
+Định dạng response: `{ data, meta }` (list) · `{ data }` (single) · `{ error: { code, message } }` (lỗi).
 
-Response contract: `{data, meta}` (list) · `{data}` (single) · `{error:{code,message}}`.
+## Quyết định thiết kế
 
-## Quyết định thiết kế (vì sao đúng tiền)
-- **Tiền = số nguyên VND** (`BIGINT`/`int`), không float → không sai số làm tròn.
-- **Dedupe 2 lớp**: DB `UNIQUE(khóa tự nhiên) + ON CONFLICT DO NOTHING` và `dedupe_settlements` ở domain → dòng income trùng y hệt (`ORD-2026-0003` ×2) không bị đếm đôi.
-- **Không FK** income→orders → giữ được **orphan** (`ORD-2026-0001`: thanh toán không có đơn) thay vì mất dữ liệu.
-- **Phân lớp**: logic đối soát thuần (không import DB/web) → unit-test không cần DB.
-- 4 trạng thái phân loại **theo settlement**; `order.status` chỉ hiển thị (mọi đơn có thanh toán đều `completed`).
+- **Tiền là số nguyên VND** (`BIGINT` / `int`), không dùng float → tránh sai số làm tròn.
+- **Khử trùng 2 lớp**: ràng buộc `UNIQUE` ở DB + `ON CONFLICT DO NOTHING` khi import, và một lần nữa trong tầng nghiệp vụ → dòng thanh toán trùng lặp không bị cộng đôi.
+- **Không đặt khóa ngoại** `income → orders`: cho phép lưu đơn mồ côi (thanh toán không khớp đơn nào) thay vì chặn insert và mất dữ liệu cần đối soát.
+- **Tách lớp**: logic đối soát thuần (không phụ thuộc DB/web) → unit-test trực tiếp, không cần dựng database.
+- Phân loại dựa trên **dữ liệu thanh toán**; trường `status` của đơn dùng để hiển thị.
 
-## AI đã sinh code sai chỗ nào & tôi phát hiện/sửa thế nào
+## Làm việc với AI
 
-Dự án làm theo quy trình **AI có kiểm soát** (xem `_bmad-output/` + `.claude/`): viết story → *advanced-elicitation* → dev (TDD) → review đối kháng 3 lớp. Chính các bước "ép AI tự phản biện" đã bắt lỗi:
+Tôi dùng AI để viết code nhưng **review và kiểm chứng từng con số tiền trước khi tin**. Một vài chỗ AI dễ làm sai mà tôi phát hiện được:
 
-1. **Bản nháp đầu của AI bỏ sót: orphan có tính vào `total_net` không?** Khi tính thử, AI dễ lọc `total_net` chỉ trên đơn khớp → **thiếu 69.811 ₫** (net của orphan `ORD-2026-0001`), lệch self-check. Bước *pre-mortem* ("giả định sai số tiền, vì sao?") bắt được → chốt AC: total tính trên **toàn bộ** settlement đã dedupe, **gồm orphan**.
-2. **Mẫu số `reconciliation_rate`**: AI suýt tính `(matched+refunded)/tổng-số-dòng` = 23/27. Đúng phải là `/số-order` = 23/26 (orphan **không** phải order). *Edge-case enumeration* phát hiện → thêm `test_rate` chốt mẫu số = 26.
-3. **Dòng income trùng y hệt** (`ORD-2026-0003`): nếu `SUM` thô thì thừa **73.440 ₫**. Bắt từ khâu khảo sát dữ liệu → dedupe 2 lớp + `test_dedupe_counts_once`.
-4. **Định nghĩa trạng thái mơ hồ**: AC ban đầu gắn `matched/refunded` với "completed", nhưng code phân loại theo settlement. *First-principles* gỡ tiền đề sai → ghi rõ `order.status` chỉ hiển thị, và `cancelled-có-settlement` là anomaly (known limitation).
+1. **Đơn mồ côi và tổng tiền** — bản nháp đầu lọc `total_net` chỉ trên các đơn khớp, làm thiếu `69.811 ₫` (tiền của đơn mồ côi đã thực về ví). Sửa: tổng tính trên toàn bộ thanh toán đã khử trùng, gồm cả đơn mồ côi.
+2. **Mẫu số tỉ lệ đối soát** — suýt lấy `(khớp + hoàn) / tổng số dòng` = 23/27. Đúng phải là `/ số đơn` = 23/26 (đơn mồ côi không phải đơn trong sổ). Đã thêm test khóa mẫu số = 26.
+3. **Dòng thanh toán trùng** — đơn `ORD-2026-0003` xuất hiện hai lần giống hệt; nếu cộng thẳng sẽ dư `73.440 ₫`. Đã khử trùng 2 lớp + test riêng.
+4. **Định nghĩa trạng thái** — gắn `matched/refunded` cứng với đơn `completed` trong khi thực tế phân loại theo dữ liệu thanh toán. Đã làm rõ và ghi nhận trường hợp ngoại lệ.
 
-**Cách verify**: mỗi con số được đối chiếu độc lập 3 nguồn (pytest / reimplement Node / PowerShell từ CSV gốc) + chạy thật `docker compose` → `/kpi` trả đúng `1.615.756`. Review 3 lớp đối kháng: 0 BLOCK, 5 NOTE (deferred cho tính năng tương lai — multi-settlement, phân trang). Chi tiết: [`_bmad-output/implementation-artifacts/1-1-validation-report.md`](_bmad-output/implementation-artifacts/1-1-validation-report.md).
+Mỗi con số được đối chiếu độc lập với file CSV gốc và kiểm lại bằng `/kpi` khi chạy thật.
+
+> **Self-check:** `Σ net_received = 1.615.756 ₫` — khớp.
 
 ## Cấu trúc
+
 ```
-backend/   app/{domain,api,repositories,loaders}, migrations, scripts, tests
-frontend/  app, components, lib (Next.js 15)
-_bmad-output/   quy trình AI: project-context (ADR/chuẩn) + epic + story + sprint-status + validation-report
-.claude/   harness: skills (create-story, dev-story, code-review, advanced-elicitation, ...) + agents đối kháng
+backend/
+  app/        domain (logic đối soát thuần) · api · repositories · loaders
+  migrations/ Goose (up/down)
+  scripts/    seed dữ liệu
+  tests/      pytest (gồm test self-check)
+frontend/
+  app/ components/ lib/   Next.js 15 (dashboard, UIMap + badge)
 ```
+
+> Thư mục `_bmad-output/` và `.claude/` chứa tài liệu quy trình phát triển có AI hỗ trợ (đặc tả, ghi chú review) — không bắt buộc để chạy ứng dụng.
